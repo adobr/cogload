@@ -1,7 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-
+library(haven)
 
 score_multiselect <- function(x, key) {
   score_one <- function(resp) {
@@ -36,8 +36,7 @@ key_low_high <- c(1, 1, 2, 2, 2, 1, 2)
 key_high_low  <- c(1, 1, 2, 2, 1, 2, 2)
 key_high_high <- c(1, 2, 1, 2, 1, 2, 2)
 
-library(haven)
-results <- read_sav("/Users/dobrokhotova/Yandex.Disk.localized/курсовая/raw.sav")
+results <- read_sav("/Users/dobrokhotova/Documents/GitHub/cogload/data/raw2.sav")
 
 
 long_df <- bind_rows(
@@ -114,7 +113,6 @@ long_df <- long_df %>%
       rowSums(across(ans1:ans7), na.rm = TRUE)
     )
   )
-library(dplyr)
 
 # Блок с опросниками по всем 4 условиям
 survey_df <- bind_rows(
@@ -210,9 +208,12 @@ label_map <- list(
   IL1  = "Тема/темы в задании были очень сложными.",
   IL2 = "Материал в задании был очень сложным.",
   IL3 = "Понятия и определения в задании были для меня очень сложными.",
-  EL1 = "Указания и/или объяснения в задании были непонятными.",
-  EL2 = "Указаниях и/или объяснения в задании были бесполезными.",
-  EL3 = "В указаниях и/или объяснениях в задании были непонятные формулировки.",
+  #EL1 = "Указания и/или объяснения в задании были непонятными.",
+  #EL2 = "Указаниях и/или объяснения в задании были бесполезными.",
+  #EL3 = "В указаниях и/или объяснениях в задании были непонятные формулировки.",
+  EL1 = "Формулировки заданий были непонятными.",
+  EL2 = "Формулировки заданий никак не помогали обучению.",
+  EL3 = "В формулировках заданий было много незнакомых или непонятных слов.",
   GL1 = "Задание углубило моё понимание темы (или тем).",
   GL2 = "Задание углубило мои знания и моё понимание геометрии.",
   GL3 = "Задание углубило моё понимание материала.",
@@ -227,161 +228,5 @@ for (nm in names(label_map)) {
   attr(long_df[[nm]], "label") <- label_map[[nm]]
 }
 
-
-for (nm in names(label_map)) {
-  attr(long_df[[nm]], "label") <- label_map[[nm]]
-}
-
-
-
-
-
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(scales)
-
-survey_vars <- c(
-  "IL1",
-  "IL2",
-  "IL3",
-  "EL1",
-  "EL2",
-  "EL3",
-  "GL1",
-  "GL2",
-  "GL3",
-  "GL4",
-  "NASA_mental_demand",
-  "NASA_performance",
-  "NASA_effort",
-  "NASA_frustration"
-)
-
-# подписи из label, если они есть
-item_labels <- sapply(survey_vars, function(v) {
-  lab <- attr(long_df[[v]], "label")
-  if (is.null(lab)) v else lab
-})
-
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(scales)
-
-survey_vars <- c(
-  "IL1",
-  "IL2",
-  "IL3",
-  "EL1",
-  "EL2",
-  "EL3",
-  "GL1",
-  "GL2",
-  "GL3",
-  "GL4",
-  "NASA_mental_demand",
-  "NASA_performance",
-  "NASA_effort",
-  "NASA_frustration"
-)
-
-# подписи из label, если они есть
-item_labels <- sapply(survey_vars, function(v) {
-  lab <- attr(long_df[[v]], "label")
-  if (is.null(lab)) v else lab
-})
-
-plot_survey_df <- long_df %>%
-  select(id, EL, IL, all_of(survey_vars)) %>%
-  pivot_longer(
-    cols = all_of(survey_vars),
-    names_to = "item",
-    values_to = "response"
-  ) %>%
-  mutate(
-    EL = factor(EL, levels = c("low", "high")),
-    IL = factor(IL, levels = c("low", "high")),
-    condition = factor(
-      paste("EL =", EL, ", IL =", IL),
-      levels = c(
-        "EL = low , IL = low",
-        "EL = low , IL = high",
-        "EL = high , IL = low",
-        "EL = high , IL = high"
-      )
-    ),
-    response = as.numeric(response),
-    item = factor(item, levels = survey_vars)
-  ) %>%
-  filter(!is.na(response)) %>%
-  count(item, condition, response) %>%
-  group_by(item, condition) %>%
-  mutate(prop = n / sum(n)) %>%
-  ungroup()
-
-ggplot(plot_survey_df, aes(x = response, y = prop, color = condition, group = condition)) +
-  geom_line(linewidth = 0.9) +
-  geom_point(size = 1.8) +
-  facet_wrap(
-    ~ item,
-    ncol = 4,
-    scales = "free_y",
-    labeller = as_labeller(item_labels)
-  ) +
-  scale_x_continuous(breaks = 0:10) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  labs(
-    x = "Ответ по шкале 0–10",
-    y = "Доля ответов",
-    color = "Условие",
-    title = "Распределение ответов по шкалам опросников",
-    subtitle = "Цветом показаны все 4 комбинации EL × IL"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    axis.text.x = element_text(angle = 0),
-    legend.position = "bottom"
-  )
-
-saveRDS(long_df, file = "long_df.rds")
-
-plot_survey_df <- plot_survey_df %>%
-  mutate(
-    condition = factor(
-      paste0("EL=", EL, ", IL=", IL),
-      levels = c(
-        "EL=low, IL=low",
-        "EL=low, IL=high",
-        "EL=high, IL=low",
-        "EL=high, IL=high"
-      )
-    )
-  )
-
-ggplot(plot_survey_df, aes(x = condition, y = response, fill = condition)) +
-  geom_boxplot(outlier.alpha = 0.4) +
-  facet_wrap(
-    ~ item,
-    ncol = 4,
-    labeller = as_labeller(item_labels)
-  ) +
-  scale_y_continuous(breaks = 0:10, limits = c(0, 10)) +
-  labs(
-    x = "Условие",
-    y = "Ответ по шкале 0–10",
-    fill = "Условие",
-    title = "Box plot ответов по 4 условиям"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 30, hjust = 1),
-    strip.text = element_text(size = 8)
-  )
-
-
-
-
-
-
+head(long_df)
+saveRDS(long_df, file = "/Users/dobrokhotova/Documents/GitHub/cogload/data/data2.rds")
