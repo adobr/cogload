@@ -1,7 +1,7 @@
 library(lavaan)
 library(dplyr)
 
-data <- readRDS('/Users/dobrokhotova/Documents/GitHub/cogload/data/data1.rds')
+data <- readRDS('/Users/dobrokhotova/Documents/GitHub/cogload/data/data2.rds')
 
 leppink_vars <- c("IL1","IL2","IL3","EL1","EL2","EL3","GL1","GL2","GL3","GL4")
 leppink_data <- data %>% select(all_of(leppink_vars))
